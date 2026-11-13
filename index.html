@@ -1,0 +1,480 @@
+<!doctype html>
+<!--
+=====================================================================
+ AI Personal Trainer  |  مدربك الشخصي   (single file, no build step)
+=====================================================================
+ FILES TO DOWNLOAD (once, while online). Version pinned to 0.10.14.
+
+ Folder layout (put index.html beside the vendor folder):
+
+   my-booth/
+   ├── index.html                         <- this file
+   └── vendor/
+       ├── vision_bundle.mjs
+       ├── wasm/
+       │   ├── vision_wasm_internal.js
+       │   ├── vision_wasm_internal.wasm
+       │   ├── vision_wasm_nosimd_internal.js
+       │   └── vision_wasm_nosimd_internal.wasm
+       └── models/
+           └── pose_landmarker_lite.task
+
+ URLs:
+   vendor/vision_bundle.mjs
+     https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/vision_bundle.mjs
+   vendor/wasm/<each of the 4 files above>
+     https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14/wasm/<file name>
+   vendor/models/pose_landmarker_lite.task
+     https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task
+
+ (Shortcut: `npm pack @mediapipe/tasks-vision@0.10.14` and copy
+  vision_bundle.mjs + the wasm folder from the package.)
+
+ HOW TO RUN (important): browsers block ES modules and .wasm on file://,
+ so serve the folder locally, still fully offline:
+   cd my-booth && python3 -m http.server 8000
+ then open http://localhost:8000 in Chrome/Edge (localhost allows the camera).
+=====================================================================
+-->
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AI Personal Trainer</title>
+<style>
+/* ---------- Look: dark, huge type, readable from 3 meters ---------- */
+:root{--ink:#0c1719;--panel:#14262a;--bone:#f4f0e6;--ok:#3ddc84;--bad:#ff5252;--warn:#ffb020;--mute:#9db3b6}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--ink);color:var(--bone);overflow:auto;
+  font-family:"Tajawal","Segoe UI",Tahoma,system-ui,sans-serif}
+[hidden]{display:none!important}
+#stage{position:fixed;inset:0}
+/* video and skeleton canvas share the same box and are mirrored together */
+#cam,#ov{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transform:scaleX(-1)}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:4vmin;gap:3vmin}
+#menu,#result,#loading{background:rgba(12,23,25,.86)}
+h1{font-size:9vmin;font-weight:800;line-height:1.1}
+.en{font-size:4.2vmin;color:var(--mute);direction:ltr;font-weight:600}
+.sub{font-size:5vmin;color:var(--bone)}
+.btns{display:grid;grid-template-columns:repeat(3,1fr);gap:3vmin;width:100%;max-width:170vmin}
+.btns button{background:var(--panel);color:var(--bone);border:0;border-bottom:1.4vmin solid var(--ok);
+  border-radius:3vmin;padding:6vmin 2vmin;cursor:pointer;font:inherit}
+.btns button:hover,.btns button:focus-visible{background:#1d3a40;outline:.8vmin solid var(--bone)}
+.btns b{display:block;font-size:8vmin}
+.btns span{display:block;font-size:4.6vmin;color:var(--mute);direction:ltr;margin-top:1vmin}
+@media (max-aspect-ratio:1/1){.btns{grid-template-columns:1fr}}
+
+/* ---------- HUD during a session ---------- */
+#hud{justify-content:space-between;pointer-events:none;background:linear-gradient(rgba(12,23,25,.7),transparent 25%,transparent 70%,rgba(12,23,25,.7))}
+#top{display:flex;justify-content:space-between;align-items:flex-start;width:100%}
+#top div{background:rgba(12,23,25,.75);padding:1.5vmin 3vmin;border-radius:2vmin;font-size:6vmin;font-weight:800}
+#cancel{pointer-events:auto;background:var(--panel);color:var(--bone);border:0;font:inherit;font-size:4vmin;padding:1.5vmin 3vmin;border-radius:2vmin;cursor:pointer}
+#big{font-size:34vmin;font-weight:900;line-height:1;text-shadow:0 0 6vmin #000}
+#hint{font-size:5.5vmin;background:rgba(12,23,25,.75);padding:1.5vmin 4vmin;border-radius:2vmin}
+#fb{background:rgba(12,23,25,.9);border-radius:4vmin;padding:4vmin 8vmin;border:1vmin solid var(--bone)}
+#fb .mark{font-size:30vmin;line-height:1;font-weight:900}
+#fb .tip{font-size:10vmin;font-weight:800}
+#fb .pts{font-size:5vmin;color:var(--mute)}
+#warn{position:absolute;left:4vmin;right:4vmin;bottom:5vmin;background:var(--warn);color:#1a1200;font-size:7vmin;font-weight:800;padding:3vmin;border-radius:3vmin;text-align:center}
+
+/* ---------- Result screen ---------- */
+#total{font-size:30vmin;font-weight:900;line-height:1}
+#stars{font-size:16vmin;color:var(--warn);letter-spacing:1vmin}
+.line{font-size:6vmin}
+.fix{font-size:6.5vmin;background:var(--panel);padding:3vmin 6vmin;border-radius:3vmin}
+.fix b{color:var(--warn);display:block;font-size:9vmin;margin-top:1vmin}
+#again{font:inherit;font-size:8vmin;font-weight:800;background:var(--ok);color:#06210f;border:0;border-radius:3vmin;padding:2.5vmin 10vmin;cursor:pointer}
+#again:focus-visible{outline:.8vmin solid var(--bone)}
+.ok{color:var(--ok)}.no{color:var(--bad)}
+
+/* إصلاح شاشة النتائج */
+#result {
+  justify-content: flex-start;
+  overflow-y: auto;
+  padding: 20px;
+  gap: 12px;
+}
+
+#result #total {
+  font-size: clamp(55px, 12vh, 110px);
+  line-height: 1.1;
+}
+
+#result #stars {
+  font-size: clamp(30px, 7vh, 65px);
+}
+
+#result button {
+  font-size: clamp(22px, 4vh, 40px);
+  padding: 12px 28px;
+  flex-shrink: 0;
+}
+
+</style>
+</head>
+<body>
+<main id="stage">
+  <video id="cam" playsinline muted></video>
+  <canvas id="ov"></canvas>
+
+  <!-- Loading / error screen -->
+  <section id="loading" class="screen"><h1 id="loadmsg">جاري تحميل المدرب…</h1></section>
+
+  <!-- Exercise menu -->
+  <section id="menu" class="screen" hidden>
+    <h1>مدربك الشخصي</h1><div class="en">AI Personal Trainer</div>
+    <div class="sub">اختر التمرين ثم قف أمام الكاميرا</div>
+    <div class="btns">
+      <button data-ex="squat"><b>سكوات</b><span>Squat</span></button>
+      <button data-ex="arms"><b>رفع اليدين</b><span>Arms Up</span></button>
+      <button data-ex="lunge"><b>لنج</b><span>Lunge</span></button>
+    </div>
+  </section>
+
+  <!-- Session HUD -->
+  <section id="hud" class="screen" hidden>
+    <div id="top"><div id="exname"></div><div id="count"></div><button id="cancel">إلغاء</button></div>
+    <div id="big" hidden></div>
+    <div id="fb" hidden><div class="mark" id="mark"></div><div class="tip" id="tip"></div><div class="pts" id="pts"></div></div>
+    <div id="hint"></div>
+  </section>
+  <div id="warn" hidden>ارجع لورا شوي عشان يبان جسمك كامل</div>
+
+  <!-- Result -->
+  <section id="result" class="screen" hidden>
+    <div class="sub">نتيجتك</div>
+    <div id="total"></div>
+    <div id="stars"></div>
+    <div class="line" id="correct"></div>
+    <div class="fix">أهم شي تعدّله<b id="fixtip"></b></div>
+    <button id="again">زائر جديد</button>
+  </section>
+</main>
+
+<script type="module">
+/* =====================================================================
+   1) CONFIG — every number a coach may want to tune lives here.
+   Angles are in degrees. Scores are points per rep (max 20 = 10 + 10).
+   ===================================================================== */
+const CONFIG = {
+  reps: 5,                 // reps per session
+  correctRepMin: 16,       // a rep with >= 16/20 counts as "correct"
+  smoothFrames: 5,         // average angles over this many frames
+  minVisibility: 0.5,      // landmark visibility needed to count as "seen"
+  feedbackMs: 2500,        // how long the check/cross stays on screen
+  squat: {
+    startAt: 125,          // an attempt begins when knee angle drops below this
+                           // (spec rep value is 100; raised so shallow squats still get scored 5/0)
+    finishAt: 160,         // rep ends when knee angle is back above this
+    depthFull: 100,        // min knee angle <= 100  -> depth 10
+    depthHalf: 120,        // min knee angle <= 120  -> depth 5, else 0
+    leanMax: 45,           // torso lean (vs vertical) <= 45 -> posture 10
+    kneeOverMargin: 0.15,  // knee past toes by > 15% of shin length = "clearly past"
+    kneePenalty: 5         // points removed for knee past toes
+  },
+  arms: {
+    startAt: 135,          // attempt begins when shoulder angle rises above this (spec rep value 160)
+    finishAt: 60,          // rep ends when shoulder angle is back below this
+    rangeFull: 165,        // max shoulder angle >= 165 -> range 10
+    rangeHalf: 145,        // max shoulder angle >= 145 -> range 5, else 0
+    elbowMin: 150,         // elbows must stay at least this straight
+    diffMax: 20            // max left/right shoulder angle difference
+  },
+  lunge: {
+    startAt: 125,          // front knee angle below this starts an attempt (spec value 100)
+    finishAt: 160,         // back above this ends the rep
+    depthFull: 100,
+    depthHalf: 120,
+    leanMax: 20            // torso must stay upright: lean <= 20 -> posture 10
+  },
+  // Arabic tips (spoken and shown). "armsStraight" is an extra tip for bent elbows / uneven arms.
+  tips: {
+    good: "ممتاز!",
+    deeper: "انزل أكثر",
+    back: "خلّ ظهرك مستقيم",
+    armsUp: "ارفع يدينك للآخر",
+    knee: "ركبتك طالعة قدام أصابعك",
+    armsStraight: "افرد يدينك وارفعهم مع بعض"
+  }
+};
+const NAMES = { squat: "سكوات · Squat", arms: "رفع اليدين · Arms Up", lunge: "لنج · Lunge" };
+const HINTS = { squat: "قف مستقيم وابدأ", arms: "نزّل يدينك وابدأ", lunge: "قف مستقيم وابدأ" };
+
+/* =====================================================================
+   2) Tiny helpers
+   ===================================================================== */
+const $ = id => document.getElementById(id);
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// Angle at point b (in degrees) formed by points a-b-c.
+function angle(a, b, c) {
+  const r = Math.atan2(c.y - b.y, c.x - b.x) - Math.atan2(a.y - b.y, a.x - b.x);
+  let d = Math.abs(r * 180 / Math.PI);
+  return d > 180 ? 360 - d : d;
+}
+// How far the shoulder-hip line leans away from straight up (0 = upright).
+function lean(sh, hip) {
+  return Math.atan2(Math.abs(sh.x - hip.x), hip.y - sh.y) * 180 / Math.PI;
+}
+// Smoothing: keep the last N values per name and return their average.
+const buffers = {};
+function smooth(key, v) {
+  const b = buffers[key] || (buffers[key] = []);
+  b.push(v); if (b.length > CONFIG.smoothFrames) b.shift();
+  return b.reduce((s, x) => s + x, 0) / b.length;
+}
+
+/* =====================================================================
+   3) Speech (Web Speech API). Skipped silently if no Arabic voice exists.
+   ===================================================================== */
+let voice = null;
+function pickVoice() {
+  const vs = window.speechSynthesis ? speechSynthesis.getVoices() : [];
+  voice = vs.find(v => v.lang === "ar-SA") || vs.find(v => v.lang.startsWith("ar")) || null;
+}
+if (window.speechSynthesis) { pickVoice(); speechSynthesis.onvoiceschanged = pickVoice; }
+function speak(text) {
+  if (!voice) return;
+  speechSynthesis.cancel();
+  const u = new SpeechSynthesisUtterance(text);
+  u.voice = voice; u.lang = "ar-SA"; u.rate = 0.95;
+  speechSynthesis.speak(u);
+}
+
+/* =====================================================================
+   4) Camera + MediaPipe Pose Landmarker (all files loaded from ./vendor)
+   ===================================================================== */
+const cam = $("cam"), ov = $("ov"), ctx = ov.getContext("2d");
+let landmarker = null;
+
+async function init() {
+  try {
+    cam.srcObject = await navigator.mediaDevices.getUserMedia({
+      video: { width: 1280, height: 720, facingMode: "user" }, audio: false });
+    await cam.play();
+    ov.width = cam.videoWidth; ov.height = cam.videoHeight;
+  } catch (e) {
+    return fail("ما قدرنا نفتح الكاميرا. اسمح بالوصول للكاميرا وأعد تحميل الصفحة.");
+  }
+  try {
+    const { PoseLandmarker, FilesetResolver } = await import("./vendor/vision_bundle.mjs");
+    const fileset = await FilesetResolver.forVisionTasks("./vendor/wasm");
+    const make = delegate => PoseLandmarker.createFromOptions(fileset, {
+      baseOptions: { modelAssetPath: "./vendor/models/pose_landmarker_lite.task", delegate },
+      runningMode: "VIDEO", numPoses: 1 });
+    try { landmarker = await make("GPU"); } catch { landmarker = await make("CPU"); } // fall back if no GPU
+  } catch (e) {
+    console.error(e);
+    return fail("ما لقينا ملفات ./vendor — شوف التعليمات في أول ملف index.html (وشغّل عبر localhost)");
+  }
+  $("loading").hidden = true; $("menu").hidden = false;
+  requestAnimationFrame(loop);
+}
+function fail(msg) { $("loadmsg").textContent = msg; $("loadmsg").style.fontSize = "6vmin"; }
+
+/* =====================================================================
+   5) App state
+   ===================================================================== */
+let state = "loading";   // menu | countdown | active | feedback | result
+let ex = null;           // current exercise key
+let reps = [];           // scored reps: {total, tip}
+let armed = false;       // true once the person has been in the start position
+let rep = null;          // data collected while one rep is in progress
+let sessionId = 0;       // lets us cancel a session mid-countdown
+
+// Skeleton lines grouped so we can colour a body part red when it is wrong.
+const TORSO = [[11,12],[11,23],[12,24],[23,24]];
+const LEGS  = [[23,25],[25,27],[24,26],[26,28],[27,31],[28,32]];
+const ARMS  = [[11,13],[13,15],[12,14],[14,16]];
+
+/* =====================================================================
+   6) Main loop: detect -> measure -> draw -> count reps
+   ===================================================================== */
+let lastT = -1;
+function loop() {
+  requestAnimationFrame(loop);
+  if (cam.readyState < 2 || cam.currentTime === lastT) return;   // wait for a new frame
+  lastT = cam.currentTime;
+  const res = landmarker.detectForVideo(cam, performance.now());
+  ctx.clearRect(0, 0, ov.width, ov.height);
+  const lm = res.landmarks && res.landmarks[0];
+  const playing = state === "countdown" || state === "active" || state === "feedback";
+  if (!lm) { $("warn").hidden = !playing; return; }
+
+  const W = ov.width, H = ov.height;
+  const P = i => ({ x: lm[i].x * W, y: lm[i].y * H });
+  const vis = i => lm[i].visibility ?? 0;
+
+  // Is the full body in view? (shoulders, hips, knees, ankles)
+  const full = [11,12,23,24,25,26,27,28].every(i => vis(i) >= CONFIG.minVisibility);
+  $("warn").hidden = full || !playing;
+
+  // Pick the body side the camera sees best.
+  const sum = ids => ids.reduce((s, i) => s + vis(i), 0);
+  const left = sum([11,13,15,23,25,27,31]) >= sum([12,14,16,24,26,28,32]);
+  const S = left ? { sh:11, el:13, wr:15, hip:23, kn:25, an:27, toe:31 }
+                 : { sh:12, el:14, wr:16, hip:24, kn:26, an:28, toe:32 };
+
+  // ----- Measurements (all smoothed) -----
+  const m = {};
+  const kl = smooth("kl", angle(P(23), P(25), P(27)));
+  const kr = smooth("kr", angle(P(24), P(26), P(28)));
+  // Lunge: the front leg bends most, so use the smaller knee angle. Others: the visible side.
+  m.knee = ex === "lunge" ? Math.min(kl, kr) : (left ? kl : kr);
+  m.lean = smooth("lean", lean(P(S.sh), P(S.hip)));
+  // Knee past toes: how far the knee is beyond the toe in the facing direction, as a share of shin length.
+  const toe = P(S.toe), ank = P(S.an), kn = P(S.kn);
+  const shin = Math.hypot(kn.x - ank.x, kn.y - ank.y) || 1;
+  const dir = Math.sign(toe.x - ank.x);
+  const facing = Math.abs(toe.x - ank.x) > 0.1 * shin;   // ignore when seen from the front
+  m.over = smooth("over", facing ? dir * (kn.x - toe.x) / shin : 0);
+  m.sh  = smooth("sh",  angle(P(S.hip), P(S.sh), P(S.wr)));
+  m.shL = smooth("shL", angle(P(23), P(11), P(15)));
+  m.shR = smooth("shR", angle(P(24), P(12), P(16)));
+  m.elL = smooth("elL", angle(P(11), P(13), P(15)));
+  m.elR = smooth("elR", angle(P(12), P(14), P(16)));
+  m.diff = Math.abs(m.shL - m.shR);
+  const raised = Math.max(m.shL, m.shR) > 60;   // only judge arm form once arms are up
+
+  // ----- Live form check -> which body parts are red -----
+  const bad = new Set();
+  if (ex === "squat") {
+    if (m.lean > CONFIG.squat.leanMax) TORSO.forEach(s => bad.add(s));
+    if (m.over > CONFIG.squat.kneeOverMargin) LEGS.forEach(s => bad.add(s));
+  } else if (ex === "lunge") {
+    if (m.lean > CONFIG.lunge.leanMax) TORSO.forEach(s => bad.add(s));
+  } else if (ex === "arms" && raised) {
+    if (Math.min(m.elL, m.elR) < CONFIG.arms.elbowMin || m.diff > CONFIG.arms.diffMax) ARMS.forEach(s => bad.add(s));
+  }
+  draw(lm, W, H, bad);
+
+  if (state === "active" && full) trackRep(m, raised);
+}
+
+// Draw the skeleton: green lines when OK, red for the parts with wrong form.
+function draw(lm, W, H, bad) {
+  ctx.lineWidth = Math.max(8, W / 120); ctx.lineCap = "round";
+  for (const seg of [...TORSO, ...LEGS, ...ARMS]) {
+    const [a, b] = seg;
+    ctx.strokeStyle = bad.has(seg) ? "#ff5252" : "#3ddc84";
+    ctx.beginPath(); ctx.moveTo(lm[a].x * W, lm[a].y * H); ctx.lineTo(lm[b].x * W, lm[b].y * H); ctx.stroke();
+  }
+  ctx.fillStyle = "#fff";
+  [11,12,13,14,15,16,23,24,25,26,27,28].forEach(i => {
+    ctx.beginPath(); ctx.arc(lm[i].x * W, lm[i].y * H, ctx.lineWidth * 0.8, 0, 7); ctx.fill();
+  });
+}
+
+/* =====================================================================
+   7) Rep counting: wait in start pose -> move -> return to start pose
+   ===================================================================== */
+function trackRep(m, raised) {
+  const c = CONFIG[ex];
+  const low = ex !== "arms";                 // squat/lunge: angle goes DOWN then UP. Arms: UP then DOWN.
+  const v = ex === "arms" ? m.sh : m.knee;   // the angle that defines the rep
+  const atStart = low ? v >= c.finishAt : v <= c.finishAt;
+  const moving  = low ? v <  c.startAt  : v >  c.startAt;
+
+  if (!armed) { if (atStart) { armed = true; $("hint").hidden = true; } return; }
+  if (!rep) {
+    if (moving) rep = { ext: v, lean: 0, over: 0, elMin: 999, diff: 0 };
+    return;
+  }
+  // Collect the worst/best values seen during this rep.
+  rep.ext = low ? Math.min(rep.ext, v) : Math.max(rep.ext, v);
+  rep.lean = Math.max(rep.lean, m.lean);
+  rep.over = Math.max(rep.over, m.over);
+  if (raised) { rep.elMin = Math.min(rep.elMin, m.elL, m.elR); rep.diff = Math.max(rep.diff, m.diff); }
+  if (atStart) finishRep();
+}
+
+// Turn the collected numbers into a score and one tip.
+function scoreRep(r) {
+  const c = CONFIG[ex], T = CONFIG.tips;
+  let main, post, tip;
+  if (ex === "arms") {
+    main = r.ext >= c.rangeFull ? 10 : r.ext >= c.rangeHalf ? 5 : 0;
+    const straight = r.elMin >= c.elbowMin, together = r.diff <= c.diffMax;
+    post = straight && together ? 10 : 0;
+    tip = main <= post && main < 10 ? T.armsUp : post < 10 ? T.armsStraight : T.armsUp;
+  } else {
+    main = r.ext <= c.depthFull ? 10 : r.ext <= c.depthHalf ? 5 : 0;
+    const kneeOut = ex === "squat" && r.over > c.kneeOverMargin;
+    post = r.lean <= c.leanMax ? 10 : 0;
+    if (kneeOut) post = Math.max(0, post - c.kneePenalty);
+    // Tip = the biggest point loss (depth first on ties).
+    tip = (10 - main) >= (10 - post) ? T.deeper : (kneeOut ? T.knee : T.back);
+  }
+  const total = main + post;
+  if (total >= CONFIG.correctRepMin) tip = T.good;
+  return { total, tip };
+}
+
+function finishRep() {
+  const s = scoreRep(rep);
+  reps.push(s); rep = null; armed = false; state = "feedback";
+  const ok = s.total >= CONFIG.correctRepMin;
+  $("mark").textContent = ok ? "✓" : "✗";
+  $("mark").className = "mark " + (ok ? "ok" : "no");
+  $("tip").textContent = s.tip;
+  $("pts").textContent = s.total + " / 20";
+  $("fb").hidden = false;
+  speak(s.tip);
+  const id = sessionId;
+  setTimeout(() => {
+    if (id !== sessionId) return;
+    $("fb").hidden = true;
+    if (reps.length >= CONFIG.reps) return showResult();
+    state = "active"; $("hint").textContent = HINTS[ex]; $("hint").hidden = false; updateCount();
+  }, CONFIG.feedbackMs);
+}
+function updateCount() { $("count").textContent = "الحركة " + Math.min(reps.length + 1, CONFIG.reps) + " / " + CONFIG.reps; }
+
+/* =====================================================================
+   8) Session flow: menu -> 3-2-1 -> reps -> result -> menu
+   ===================================================================== */
+async function startSession(key) {
+  const id = ++sessionId;
+  ex = key; reps = []; rep = null; armed = false;
+  Object.keys(buffers).forEach(k => delete buffers[k]);
+  $("menu").hidden = true; $("result").hidden = true; $("hud").hidden = false; $("fb").hidden = true;
+  $("exname").textContent = NAMES[key]; updateCount();
+  $("hint").textContent = HINTS[key]; $("hint").hidden = false;
+  state = "countdown";
+  $("big").hidden = false;
+  for (const n of [3, 2, 1]) {
+    $("big").textContent = n; await sleep(1000);
+    if (id !== sessionId) return;                // cancelled
+  }
+  $("big").hidden = true; state = "active";
+}
+
+function showResult() {
+  state = "result";
+  $("hud").hidden = true; $("warn").hidden = true;
+  const total = reps.reduce((s, r) => s + r.total, 0);                       // out of 100
+  const stars = Math.max(1, Math.min(5, Math.round(total / 20)));
+  const correct = reps.filter(r => r.total >= CONFIG.correctRepMin).length;
+  const counts = {};                                                         // most frequent tip (ignoring "ممتاز!")
+  reps.forEach(r => { if (r.tip !== CONFIG.tips.good) counts[r.tip] = (counts[r.tip] || 0) + 1; });
+  const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  $("total").textContent = total + "/100";
+  $("stars").textContent = "★".repeat(stars) + "☆".repeat(5 - stars);
+  $("correct").textContent = "الحركات الصحيحة: " + correct + " / " + CONFIG.reps;
+  $("fixtip").textContent = top ? top[0] : "ولا شي — أداؤك ممتاز!";
+  $("result").hidden = false;
+}
+
+function toMenu() {
+  sessionId++; state = "menu"; ex = null;
+  $("hud").hidden = true; $("result").hidden = true; $("warn").hidden = true; $("menu").hidden = false;
+  if (window.speechSynthesis) speechSynthesis.cancel();
+}
+
+document.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => startSession(b.dataset.ex));
+$("again").onclick = toMenu;
+$("cancel").onclick = toMenu;
+init();
+</script>
+</body>
+</html>
