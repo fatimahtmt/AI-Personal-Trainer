@@ -109,7 +109,112 @@ h1{font-size:9vmin;font-weight:800;line-height:1.1}
   padding: 12px 28px;
   flex-shrink: 0;
 }
+#welcome {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
 
+#welcomeCard {
+  width: min(90vw, 700px);
+  background: var(--panel);
+  border-radius: 28px;
+  padding: 32px 24px;
+  text-align: center;
+  box-shadow: 0 10px 30px rgba(0,0,0,.35);
+}
+
+#welcomeTitle {
+  font-size: clamp(34px, 6vh, 64px);
+  margin: 10px 0 14px;
+}
+
+#welcomeText {
+  font-size: clamp(18px, 3vh, 28px);
+  opacity: .9;
+  margin-bottom: 24px;
+}
+
+#playerName {
+  width: min(100%, 420px);
+  font-size: clamp(20px, 3vh, 30px);
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 2px solid transparent;
+  outline: none;
+  text-align: center;
+  background: #fff;
+  color: #111;
+  margin-bottom: 18px;
+}
+
+#playerName:focus {
+  border-color: var(--bone);
+  box-shadow: 0 0 0 4px rgba(255,255,255,.15);
+}
+
+#startChallenge {
+  font-size: clamp(22px, 3.2vh, 34px);
+  padding: 14px 30px;
+  border-radius: 18px;
+  font-weight: 800;
+}
+
+/* إخفاء الشاشات غير النشطة */
+[hidden] {
+  display: none !important;
+}
+/* Independent leaderboard screen, using the site's existing palette. */
+#leaderboardScreen{background:var(--ink);overflow-y:auto;justify-content:flex-start;gap:20px;padding:clamp(20px,4vmin,48px)}
+.lb-heading{width:min(100%,1000px);text-align:start}
+.lb-heading .en{font-size:clamp(14px,2vmin,20px);color:var(--ok);letter-spacing:2px}
+.lb-heading h1{font-size:clamp(32px,6vmin,62px);margin-top:8px}
+.lb-layout{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:24px;width:min(100%,1000px)}
+#leaderboard,.session-summary{background:var(--panel);border:1px solid #2b4849;border-radius:24px;padding:clamp(18px,3vmin,32px);min-width:0}
+#leaderboard h2{font-size:clamp(24px,3.5vmin,34px);text-align:start;margin-bottom:20px}
+.lb-list{display:flex;flex-direction:column;gap:12px}
+.lb-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;align-items:center;gap:12px;padding:16px 12px;background:var(--ink);border:1px solid #2b4849;border-radius:16px;text-align:start}
+.lb-rank{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:#24403c;color:var(--ok);font-weight:800;font-size:22px}
+.lb-name{font-size:clamp(18px,2.6vmin,26px);overflow-wrap:anywhere;unicode-bidi:plaintext}
+.lb-score{color:var(--ok);font-size:clamp(20px,3vmin,30px);font-weight:800;direction:ltr}
+.lb-score small{color:var(--mute);font-size:14px}
+.rank-1{border-color:var(--ok);background:#193c31}
+.rank-1 .lb-rank{background:var(--ok);color:var(--ink)}
+.session-summary{display:flex;flex-direction:column;justify-content:center;gap:16px}
+#sessionName{font-size:clamp(20px,3vmin,28px);overflow-wrap:anywhere}
+#leaderboardScreen #total{font-size:clamp(56px,10vmin,100px);color:var(--ok);direction:ltr}
+#leaderboardScreen #stars{font-size:clamp(26px,5vmin,46px);color:var(--ok);direction:ltr;letter-spacing:3px}
+#leaderboardScreen .line{font-size:clamp(18px,2.8vmin,26px)}
+#leaderboardScreen .fix{font-size:18px;padding:16px;background:var(--ink);border-radius:16px}
+#leaderboardScreen .fix b{font-size:clamp(20px,3vmin,28px);color:var(--bone)}
+#again{font-size:clamp(22px,3vmin,30px);padding:16px 40px;border-radius:16px}
+.lb-empty,#saveStatus{color:var(--mute);font-size:18px}
+@media(max-width:720px){.lb-layout{grid-template-columns:1fr}.session-summary{grid-row:1}}
+/* Exercise choices remain readable on small booth screens. */
+#menu{overflow-y:auto;justify-content:flex-start}
+#menu h1{font-size:clamp(32px,7vmin,72px)}
+#menu .btns{max-width:1200px;gap:18px}
+#menu .btns button{padding:clamp(20px,4vmin,40px) 16px}
+#menu .btns b{font-size:clamp(26px,4.5vmin,46px)}
+#menu .btns span{font-size:clamp(18px,2.8vmin,28px)}
+@media(max-width:850px){#menu .btns{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:480px){#menu .btns{grid-template-columns:1fr}}
+/* Leaderboard management is available before and after a workout. */
+.manage-board{font:inherit;font-size:18px;background:transparent;color:var(--mute);border:1px solid #42615f;border-radius:12px;padding:12px 20px;cursor:pointer}
+#welcomeCard .manage-board{display:block;margin:20px auto 0}
+#boardAdmin{margin:auto;width:min(94vw,680px);max-height:90vh;overflow-y:auto;background:var(--panel);color:var(--bone);border:1px solid #42615f;border-radius:24px;padding:24px}
+#boardAdmin::backdrop{background:rgba(0,0,0,.8)}
+.admin-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:16px}
+.admin-heading h2{font-size:26px}
+#boardAdmin button{font:inherit;cursor:pointer;border-radius:10px;padding:10px 16px}
+#closeAdmin{background:var(--ink);color:var(--bone);border:1px solid #42615f}
+#adminList{display:flex;flex-direction:column;gap:12px;margin:20px 0}
+.admin-row{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--ink);border-radius:12px;padding:14px}
+.admin-row span{overflow-wrap:anywhere;min-width:0}
+.delete-score,#clearBoard{color:#ffb8b8;background:#3a2228;border:1px solid #99535d;flex-shrink:0}
+#boardAdmin button:disabled{opacity:.5;cursor:default}
+#adminStatus{margin-top:16px;color:var(--mute)}
 </style>
 </head>
 <body>
@@ -119,7 +224,18 @@ h1{font-size:9vmin;font-weight:800;line-height:1.1}
 
   <!-- Loading / error screen -->
   <section id="loading" class="screen"><h1 id="loadmsg">جاري تحميل المدرب…</h1></section>
+<section id="welcome" class="screen" hidden>
+  <div id="welcomeCard">
+    <div class="sub">HealthTech Experience</div>
+    <h1 id="welcomeTitle">AI Personal Trainer</h1>
+    <p id="welcomeText">أدخل اسمك أولًا ثم ابدأ التحدي</p>
 
+    <input id="playerName" type="text" maxlength="20" placeholder="اكتبي اسمك أو لقبك" />
+    
+    <button id="startChallenge">ابدأ التحدي</button>
+    <button type="button" class="manage-board" data-manage-board>إدارة لوحة المتصدرين</button>
+  </div>
+</section>
   <!-- Exercise menu -->
   <section id="menu" class="screen" hidden>
     <h1>مدربك الشخصي</h1><div class="en">AI Personal Trainer</div>
@@ -128,6 +244,7 @@ h1{font-size:9vmin;font-weight:800;line-height:1.1}
       <button data-ex="squat"><b>سكوات</b><span>Squat</span></button>
       <button data-ex="arms"><b>رفع اليدين</b><span>Arms Up</span></button>
       <button data-ex="lunge"><b>لنج</b><span>Lunge</span></button>
+      <button data-ex="taps"><b>لمس الكتف المقابل</b><span>Standing Shoulder Taps</span></button>
     </div>
   </section>
 
@@ -140,16 +257,30 @@ h1{font-size:9vmin;font-weight:800;line-height:1.1}
   </section>
   <div id="warn" hidden>ارجع لورا شوي عشان يبان جسمك كامل</div>
 
-  <!-- Result -->
-  <section id="result" class="screen" hidden>
-    <div class="sub">نتيجتك</div>
-    <div id="total"></div>
-    <div id="stars"></div>
-    <div class="line" id="correct"></div>
-    <div class="fix">أهم شي تعدّله<b id="fixtip"></b></div>
+  <!-- Dedicated screen shown after the final repetition -->
+  <section id="leaderboardScreen" class="screen" hidden aria-labelledby="leaderboardTitle">
+    <header class="lb-heading"><div class="en">HEALTHTECH EXPERIENCE</div><h1 id="leaderboardTitle" tabindex="-1">لوحة المتصدرين</h1></header>
+    <div class="lb-layout">
+      <div id="leaderboard"></div>
+      <div class="session-summary">
+        <div class="sub">أكملت التحدي!</div><div id="sessionName"></div>
+        <div id="total"></div><div id="stars"></div>
+        <div class="line" id="correct"></div>
+        <div class="fix">نصيحة لتمرينك القادم<b id="fixtip"></b></div>
+      </div>
+    </div>
+    <p id="saveStatus" role="status" hidden></p>
     <button id="again">زائر جديد</button>
+    <button type="button" class="manage-board" data-manage-board>إدارة لوحة المتصدرين</button>
   </section>
 </main>
+<dialog id="boardAdmin" aria-labelledby="adminTitle" dir="rtl">
+  <div class="admin-heading"><h2 id="adminTitle">إدارة لوحة المتصدرين</h2><button type="button" id="closeAdmin" autofocus>إغلاق</button></div>
+  <p>النتائج المحفوظة في هذا المتصفح. الحذف نهائي بعد التأكيد.</p>
+  <div id="adminList"></div>
+  <button type="button" id="clearBoard">تصفير النتائج كلها</button>
+  <p id="adminStatus" role="status" aria-live="polite"></p>
+</dialog>
 
 <script type="module">
 /* =====================================================================
@@ -187,6 +318,7 @@ const CONFIG = {
     depthHalf: 120,
     leanMax: 20            // torso must stay upright: lean <= 20 -> posture 10
   },
+  taps: { startAt: 0.4, finishAt: 0.65, touchFull: 0.28, leanMax: 20 },
   // Arabic tips (spoken and shown). "armsStraight" is an extra tip for bent elbows / uneven arms.
   tips: {
     good: "ممتاز!",
@@ -198,7 +330,10 @@ const CONFIG = {
   }
 };
 const NAMES = { squat: "سكوات · Squat", arms: "رفع اليدين · Arms Up", lunge: "لنج · Lunge" };
+Object.assign(NAMES, { taps: "لمس الكتف المقابل · Shoulder Taps" });
 const HINTS = { squat: "قف مستقيم وابدأ", arms: "نزّل يدينك وابدأ", lunge: "قف مستقيم وابدأ" };
+
+Object.assign(HINTS, { taps: "قف مواجهًا للكاميرا، المس كتفك باليد المقابلة ثم أنزلها وبدّل اليد" });
 
 /* =====================================================================
    2) Tiny helpers
@@ -267,7 +402,12 @@ async function init() {
     console.error(e);
     return fail("ما لقينا ملفات ./vendor — شوف التعليمات في أول ملف index.html (وشغّل عبر localhost)");
   }
-  $("loading").hidden = true; $("menu").hidden = false;
+  
+$("loading").hidden = true;
+$("menu").hidden = true;
+$("welcome").hidden = false;
+  state = "welcome";
+
   requestAnimationFrame(loop);
 }
 function fail(msg) { $("loadmsg").textContent = msg; $("loadmsg").style.fontSize = "6vmin"; }
@@ -281,6 +421,8 @@ let reps = [];           // scored reps: {total, tip}
 let armed = false;       // true once the person has been in the start position
 let rep = null;          // data collected while one rep is in progress
 let sessionId = 0;       // lets us cancel a session mid-countdown
+let visitorName = "";
+let lastTapSide = null;
 
 // Skeleton lines grouped so we can colour a body part red when it is wrong.
 const TORSO = [[11,12],[11,23],[12,24],[23,24]];
@@ -306,7 +448,10 @@ function loop() {
   const vis = i => lm[i].visibility ?? 0;
 
   // Is the full body in view? (shoulders, hips, knees, ankles)
-  const full = [11,12,23,24,25,26,27,28].every(i => vis(i) >= CONFIG.minVisibility);
+  const upperExercise = ex === "taps";
+  const required = upperExercise ? [11,12,13,14,15,16,23,24] : [11,12,23,24,25,26,27,28];
+  const full = required.every(i => vis(i) >= CONFIG.minVisibility);
+  $("warn").textContent = upperExercise ? "ارجع شوي حتى تظهر اليدان والذراعان والجذع بالكاميرا" : "ارجع لورا شوي عشان يبان جسمك كامل";
   $("warn").hidden = full || !playing;
 
   // Pick the body side the camera sees best.
@@ -336,6 +481,12 @@ function loop() {
   m.diff = Math.abs(m.shL - m.shR);
   const raised = Math.max(m.shL, m.shR) > 60;   // only judge arm form once arms are up
 
+  if (upperExercise) {
+    const torso = Math.max(1, (Math.hypot(P(11).x-P(23).x,P(11).y-P(23).y)+Math.hypot(P(12).x-P(24).x,P(12).y-P(24).y))/2);
+    m.tapL = smooth("tapL", Math.hypot(P(15).x-P(12).x,P(15).y-P(12).y)/torso);
+    m.tapR = smooth("tapR", Math.hypot(P(16).x-P(11).x,P(16).y-P(11).y)/torso);
+  }
+
   // ----- Live form check -> which body parts are red -----
   const bad = new Set();
   if (ex === "squat") {
@@ -346,6 +497,7 @@ function loop() {
   } else if (ex === "arms" && raised) {
     if (Math.min(m.elL, m.elR) < CONFIG.arms.elbowMin || m.diff > CONFIG.arms.diffMax) ARMS.forEach(s => bad.add(s));
   }
+  if (upperExercise && m.lean > CONFIG[ex].leanMax) TORSO.forEach(s => bad.add(s));
   draw(lm, W, H, bad);
 
   if (state === "active" && full) trackRep(m, raised);
@@ -368,7 +520,26 @@ function draw(lm, W, H, bad) {
 /* =====================================================================
    7) Rep counting: wait in start pose -> move -> return to start pose
    ===================================================================== */
+function trackShoulderTap(m) {
+  if (!Number.isFinite(m.tapL) || !Number.isFinite(m.tapR)) return;
+  const c = CONFIG.taps;
+  const atStart = Math.min(m.tapL,m.tapR) >= c.finishAt;
+  if (!armed) { if (atStart) { armed = true; $("hint").hidden = true; } return; }
+  if (!rep) {
+    const side = m.tapL <= m.tapR ? "L" : "R";
+    if (m["tap"+side] >= c.startAt) return;
+    if (side === lastTapSide) {
+      $("hint").textContent = "بدّل اليد للمسة القادمة"; $("hint").hidden = false; return;
+    }
+    rep = {side, ext:m["tap"+side], lean:m.lean};
+  }
+  rep.ext = Math.min(rep.ext,m["tap"+rep.side]);
+  rep.lean = Math.max(rep.lean,m.lean);
+  if (atStart) { lastTapSide = rep.side; finishRep(); }
+}
+
 function trackRep(m, raised) {
+  if (ex === "taps") return trackShoulderTap(m);
   const c = CONFIG[ex];
   const low = ex !== "arms";                 // squat/lunge: angle goes DOWN then UP. Arms: UP then DOWN.
   const v = ex === "arms" ? m.sh : m.knee;   // the angle that defines the rep
@@ -392,7 +563,11 @@ function trackRep(m, raised) {
 function scoreRep(r) {
   const c = CONFIG[ex], T = CONFIG.tips;
   let main, post, tip;
-  if (ex === "arms") {
+  if (ex === "taps") {
+    main = r.ext <= c.touchFull ? 10 : 5;
+    post = r.lean <= c.leanMax ? 10 : 0;
+    tip = main < 10 ? "قرّب يدك من الكتف المقابل أكثر" : "خلّ ظهرك مستقيم أثناء اللمس";
+  } else if (ex === "arms") {
     main = r.ext >= c.rangeFull ? 10 : r.ext >= c.rangeHalf ? 5 : 0;
     const straight = r.elMin >= c.elbowMin, together = r.diff <= c.diffMax;
     post = straight && together ? 10 : 0;
@@ -433,11 +608,28 @@ function updateCount() { $("count").textContent = "الحركة " + Math.min(rep
 /* =====================================================================
    8) Session flow: menu -> 3-2-1 -> reps -> result -> menu
    ===================================================================== */
-async function startSession(key) {
+function goToMenuAfterName() {
+  const input = $("playerName");
+  const value = input.value.trim();
+
+  if (!value) {
+    input.focus();
+    input.placeholder = "اكتب اسمك أولًا";
+    return;
+  }
+
+  if (state !== "welcome") return;
+  state = "menu";
+  visitorName = value.slice(0, 20);
+  $("welcome").hidden = true;
+  $("menu").hidden = false;
+}
+   async function startSession(key) {
+  if (state !== "menu") return;
   const id = ++sessionId;
-  ex = key; reps = []; rep = null; armed = false;
+  ex = key; reps = []; rep = null; armed = false; lastTapSide = null;
   Object.keys(buffers).forEach(k => delete buffers[k]);
-  $("menu").hidden = true; $("result").hidden = true; $("hud").hidden = false; $("fb").hidden = true;
+  $("menu").hidden = true; $("leaderboardScreen").hidden = true; $("hud").hidden = false; $("fb").hidden = true;
   $("exname").textContent = NAMES[key]; updateCount();
   $("hint").textContent = HINTS[key]; $("hint").hidden = false;
   state = "countdown";
@@ -450,7 +642,8 @@ async function startSession(key) {
 }
 
 function showResult() {
-  state = "result";
+  if (state === "leaderboard") return;
+  state = "leaderboard";
   $("hud").hidden = true; $("warn").hidden = true;
   const total = reps.reduce((s, r) => s + r.total, 0);                       // out of 100
   const stars = Math.max(1, Math.min(5, Math.round(total / 20)));
@@ -458,22 +651,186 @@ function showResult() {
   const counts = {};                                                         // most frequent tip (ignoring "ممتاز!")
   reps.forEach(r => { if (r.tip !== CONFIG.tips.good) counts[r.tip] = (counts[r.tip] || 0) + 1; });
   const top = Object.entries(counts).sort((a, b) => b[1] - a[1])[0];
+  $("sessionName").textContent = visitorName;
   $("total").textContent = total + "/100";
   $("stars").textContent = "★".repeat(stars) + "☆".repeat(5 - stars);
   $("correct").textContent = "الحركات الصحيحة: " + correct + " / " + CONFIG.reps;
   $("fixtip").textContent = top ? top[0] : "ولا شي — أداؤك ممتاز!";
-  $("result").hidden = false;
+  $("leaderboardScreen").hidden = false;
+  saveLeaderboardScore(total);
+  showLeaderboard();
+  $("leaderboardScreen").scrollTop = 0;
+  $("leaderboardTitle").focus();
+}
+
+const LEADERBOARD_KEY = "healthtech_leaderboard";
+
+function readLeaderboard() {
+  const saved = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]");
+  if (!Array.isArray(saved)) throw new Error("Invalid leaderboard data");
+  return saved.filter(p => p && typeof p.name === "string" &&
+    Number.isFinite(p.score) && p.score >= 0 && p.score <= 100)
+    .sort((a, b) => b.score - a.score).slice(0, 5);
+}
+
+function saveLeaderboardScore(score) {
+  $("saveStatus").hidden = true;
+  try {
+    if (!visitorName.trim()) return;
+    const saved = readLeaderboard();
+    saved.push({name: visitorName.trim().slice(0, 20), score: Math.max(0, Math.min(100, score))});
+    saved.sort((a, b) => b.score - a.score);
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(saved.slice(0, 5)));
+  } catch (error) {
+    console.error("Leaderboard error:", error);
+    $("saveStatus").textContent = "تعذّر حفظ النتيجة على هذا المتصفح. نتيجتك ظاهرة هنا.";
+    $("saveStatus").hidden = false;
+  }
+}
+
+function showLeaderboard() {
+  const board = $("leaderboard");
+  board.replaceChildren();
+  const title = document.createElement("h2");
+  title.textContent = "أفضل 5 متصدرين";
+  board.appendChild(title);
+  let saved = [];
+  try { saved = readLeaderboard(); } catch (error) { console.error(error); }
+  const list = document.createElement("div");
+  list.className = "lb-list";
+  if (!saved.length) {
+    const empty = document.createElement("p");
+    empty.className = "lb-empty";
+    empty.textContent = "لا توجد نتائج محفوظة بعد";
+    list.appendChild(empty);
+  }
+  saved.forEach((player, index) => {
+    const row = document.createElement("div");
+    row.className = "lb-row rank-" + (index + 1);
+    const rank = document.createElement("div");
+    rank.className = "lb-rank";
+    rank.textContent = index + 1;
+    const name = document.createElement("div");
+    name.className = "lb-name";
+    name.textContent = player.name;
+    const score = document.createElement("div");
+    score.className = "lb-score";
+    score.textContent = player.score;
+    const max = document.createElement("small");
+    max.textContent = " /100";
+    score.appendChild(max);
+    row.append(rank, name, score);
+    list.appendChild(row);
+  });
+  board.appendChild(list);
 }
 
 function toMenu() {
-  sessionId++; state = "menu"; ex = null;
-  $("hud").hidden = true; $("result").hidden = true; $("warn").hidden = true; $("menu").hidden = false;
+  sessionId++;
+  state = "welcome";
+  ex = null;
+  visitorName = "";
+  $("hud").hidden = true;
+  $("leaderboardScreen").hidden = true;
+  $("warn").hidden = true;
+  $("menu").hidden = true;
+  $("welcome").hidden = false;
+  $("playerName").value = "";
   if (window.speechSynthesis) speechSynthesis.cancel();
 }
+
+function renderBoardAdmin() {
+  const list = $("adminList");
+  list.replaceChildren();
+  let saved;
+  try { saved = readLeaderboard(); }
+  catch (error) {
+    $("adminStatus").textContent = "تعذّرت قراءة النتائج. يمكنك محاولة تصفيرها.";
+    $("clearBoard").disabled = false;
+    return;
+  }
+  $("clearBoard").disabled = !saved.length;
+  if (!saved.length) {
+    const empty = document.createElement("p");
+    empty.textContent = "لا توجد نتائج محفوظة حاليًا";
+    list.appendChild(empty);
+  }
+  const snapshot = JSON.stringify(saved);
+  saved.forEach((player, index) => {
+    const row = document.createElement("div");
+    row.className = "admin-row";
+    const label = document.createElement("span");
+    label.textContent = `${index + 1}. ${player.name} — ${player.score}/100`;
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "delete-score";
+    button.textContent = "حذف";
+    button.setAttribute("aria-label", `حذف نتيجة ${player.name} في المركز ${index + 1}`);
+    button.onclick = () => deleteBoardScore(index, snapshot);
+    row.append(label, button);
+    list.appendChild(row);
+  });
+}
+
+function deleteBoardScore(index, snapshot) {
+  try {
+    const saved = readLeaderboard();
+    if (JSON.stringify(saved) !== snapshot || !saved[index]) {
+      $("adminStatus").textContent = "تغيّرت النتائج، راجع القائمة المحدّثة ثم اختر النتيجة مجددًا.";
+      renderBoardAdmin();
+      return;
+    }
+    if (!window.confirm(`حذف نتيجة «${saved[index].name}» (${saved[index].score}/100)؟ لا يمكن التراجع.`)) return;
+    // Recheck after confirmation in case another tab changed the results.
+    if (JSON.stringify(readLeaderboard()) !== snapshot) {
+      $("adminStatus").textContent = "تغيّرت النتائج، اختر النتيجة مجددًا من القائمة المحدّثة.";
+      renderBoardAdmin();
+      return;
+    }
+    saved.splice(index, 1);
+    localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(saved));
+    refreshManagedBoard("تم حذف النتيجة.");
+  } catch (error) { $("adminStatus").textContent = "تعذّر حذف النتيجة. حاول مرة أخرى."; }
+}
+
+function clearLeaderboard() {
+  if (!window.confirm("تصفير لوحة المتصدرين وحذف جميع النتائج المحفوظة؟ لا يمكن التراجع.")) return;
+  try {
+    localStorage.setItem(LEADERBOARD_KEY, "[]");
+    refreshManagedBoard("تم تصفير النتائج كلها.");
+  } catch (error) { $("adminStatus").textContent = "تعذّر تصفير النتائج. حاول مرة أخرى."; }
+}
+
+function refreshManagedBoard(message) {
+  $("adminStatus").textContent = message;
+  renderBoardAdmin();
+  showLeaderboard();
+}
+
+document.querySelectorAll("[data-manage-board]").forEach(button => {
+  button.onclick = () => {
+    $("adminStatus").textContent = "";
+    renderBoardAdmin();
+    $("boardAdmin").showModal();
+  };
+});
+$("closeAdmin").onclick = () => $("boardAdmin").close();
+$("clearBoard").onclick = clearLeaderboard;
+window.addEventListener("storage", event => {
+  if (event.key === LEADERBOARD_KEY || event.key === null) {
+    showLeaderboard();
+    if ($("boardAdmin").open) refreshManagedBoard("تم تحديث القائمة من نافذة أخرى.");
+  }
+});
 
 document.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => startSession(b.dataset.ex));
 $("again").onclick = toMenu;
 $("cancel").onclick = toMenu;
+$("startChallenge").onclick = goToMenuAfterName;
+
+$("playerName").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") goToMenuAfterName();
+});
 init();
 </script>
 </body>
