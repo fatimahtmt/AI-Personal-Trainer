@@ -165,6 +165,9 @@ h1{font-size:9vmin;font-weight:800;line-height:1.1}
 [hidden] {
   display: none !important;
 }
+#checkin{width:100%;max-width:570px;margin:0 auto;color:var(--bone)}
+#checkinError{color:var(--bad);font-size:20px;margin-top:12px}
+#welcome{overflow-y:auto}
 /* Independent leaderboard screen, using the site's existing palette. */
 #leaderboardScreen{background:var(--ink);overflow-y:auto;justify-content:flex-start;gap:20px;padding:clamp(20px,4vmin,48px)}
 .lb-heading{width:min(100%,1000px);text-align:start}
@@ -223,20 +226,18 @@ h1{font-size:9vmin;font-weight:800;line-height:1.1}
   <canvas id="ov"></canvas>
 
   <!-- Loading / error screen -->
-  <section id="loading" class="screen"><h1 id="loadmsg">جاري تحميل المدرب…</h1></section>
-<section id="welcome" class="screen" hidden>
-  <div id="welcomeCard">
-    <div class="sub">HealthTech Experience</div>
-    <h1 id="welcomeTitle">AI Personal Trainer</h1>
-    <p id="welcomeText">أدخل اسمك أولًا ثم ابدأ التحدي</p>
-
-    <input id="playerName" type="text" maxlength="20" placeholder="اكتبي اسمك أو لقبك" />
-    
-    <button id="startChallenge">ابدأ التحدي</button>
-    <button type="button" class="manage-board" data-manage-board>إدارة لوحة المتصدرين</button>
-  </div>
-</section>
-  <!-- Exercise menu -->
+  <section id="loading" class="screen" hidden><h1 id="loadmsg">جاري تحميل المدرب…</h1></section>
+ <section id="welcome" class="screen">
+   <div id="welcomeCard">
+     <div class="sub">HealthTech Experience · Booth 01</div>
+     <h1 id="welcomeTitle">AI Personal Trainer</h1>
+     <p id="welcomeText">سجّل الرقم الجامعي والاسم أولًا لبدء التحدي</p>
+     <div id="checkin" dir="ltr"></div>
+     <p id="checkinError" role="alert" hidden></p>
+     <button type="button" class="manage-board" data-manage-board>إدارة النتائج المحلية</button>
+   </div>
+ </section>
+<!-- Exercise menu -->
   <section id="menu" class="screen" hidden>
     <h1>مدربك الشخصي</h1><div class="en">AI Personal Trainer</div>
     <div class="sub">اختر التمرين ثم قف أمام الكاميرا</div>
@@ -269,19 +270,21 @@ h1{font-size:9vmin;font-weight:800;line-height:1.1}
         <div class="fix">نصيحة لتمرينك القادم<b id="fixtip"></b></div>
       </div>
     </div>
-    <p id="saveStatus" role="status" hidden></p>
+    <p id="saveStatus" role="status" aria-live="polite" hidden></p>
+    <a id="globalBoardLink" href="https://admirable-sfogliatella-c49329.netlify.app/dashboard/" target="_blank" rel="noopener noreferrer" style="color:var(--ok);font-size:clamp(18px,2.5vmin,26px)">عرض لوحة الأبطال المشتركة ↗</a>
     <button id="again">زائر جديد</button>
     <button type="button" class="manage-board" data-manage-board>إدارة لوحة المتصدرين</button>
   </section>
 </main>
 <dialog id="boardAdmin" aria-labelledby="adminTitle" dir="rtl">
   <div class="admin-heading"><h2 id="adminTitle">إدارة لوحة المتصدرين</h2><button type="button" id="closeAdmin" autofocus>إغلاق</button></div>
-  <p>النتائج المحفوظة في هذا المتصفح. الحذف نهائي بعد التأكيد.</p>
+    <p>هذه نتائج محلية على هذا الجهاز فقط؛ حذفها لا يحذف أي درجة من لوحة الفعالية المشتركة.</p>
   <div id="adminList"></div>
   <button type="button" id="clearBoard">تصفير النتائج كلها</button>
   <p id="adminStatus" role="status" aria-live="polite"></p>
 </dialog>
 
+<script src="https://admirable-sfogliatella-c49329.netlify.app/shared/shared.js"></script>
 <script type="module">
 /* =====================================================================
    1) CONFIG — every number a coach may want to tune lives here.
@@ -392,30 +395,110 @@ async function init() {
     return fail("ما قدرنا نفتح الكاميرا. اسمح بالوصول للكاميرا وأعد تحميل الصفحة.");
   }
   try {
+    if (!landmarker) {
     const { PoseLandmarker, FilesetResolver } = await import("./vendor/vision_bundle.mjs");
     const fileset = await FilesetResolver.forVisionTasks("./vendor/wasm");
     const make = delegate => PoseLandmarker.createFromOptions(fileset, {
       baseOptions: { modelAssetPath: "./vendor/models/pose_landmarker_lite.task", delegate },
       runningMode: "VIDEO", numPoses: 1 });
     try { landmarker = await make("GPU"); } catch { landmarker = await make("CPU"); } // fall back if no GPU
+    }
   } catch (e) {
     console.error(e);
     return fail("ما لقينا ملفات ./vendor — شوف التعليمات في أول ملف index.html (وشغّل عبر localhost)");
   }
   
-$("loading").hidden = true;
-$("menu").hidden = true;
-$("welcome").hidden = false;
-  state = "welcome";
-
-  requestAnimationFrame(loop);
+  $("loading").hidden = true;
+  $("menu").hidden = false;
+  $("welcome").hidden = true;
+  state = "menu";
+  if (!loopStarted) { loopStarted = true; requestAnimationFrame(loop); }
 }
-function fail(msg) { $("loadmsg").textContent = msg; $("loadmsg").style.fontSize = "6vmin"; }
+function fail(msg) { $("loading").hidden = false; $("loadmsg").textContent = msg; $("loadmsg").style.fontSize = "6vmin"; }
 
 /* =====================================================================
    5) App state
    ===================================================================== */
-let state = "loading";   // menu | countdown | active | feedback | result
+let state = "welcome";   // welcome | loading | menu | countdown | active | feedback | leaderboard
+let loopStarted = false;
+let currentPlayer = null;
+let attemptId = null;
+let scoreSentForAttempt = false;
+
+function setStatus(message) {
+  $("saveStatus").textContent = message;
+  $("saveStatus").hidden = false;
+}
+function beginCheckIn() {
+  ++sessionId;
+  state = "welcome";
+  ex = null; reps = []; rep = null; armed = false; lastTapSide = null;
+  currentPlayer = null;
+  visitorName = "";
+  scoreSentForAttempt = false;
+  attemptId = null;
+  if (window.speechSynthesis) speechSynthesis.cancel();
+  if (cam.srcObject) {
+    cam.srcObject.getTracks().forEach(track => track.stop());
+    cam.srcObject = null;
+  }
+  $("loading").hidden = true;
+  $("menu").hidden = true;
+  $("hud").hidden = true;
+  $("warn").hidden = true;
+  $("leaderboardScreen").hidden = true;
+  $("welcome").hidden = false;
+  $("saveStatus").hidden = true;
+  const box = $("checkin");
+  $("checkinError").hidden = true;
+  box.hidden = false;
+  box.replaceChildren();
+  if (typeof window.startCheckIn !== "function" || typeof window.htMakeId !== "function" || typeof window.saveScore !== "function") {
+    $("checkinError").textContent = "تعذّر تحميل نظام التسجيل المشترك. تحقق من اتصال الإنترنت ثم حدّث الصفحة.";
+    $("checkinError").hidden = false;
+    return;
+  }
+  attemptId = window.htMakeId();
+  window.startCheckIn(box, async ({ studentId, name }) => {
+    if (state !== "welcome") return;
+    currentPlayer = { studentId, name };
+    visitorName = name;
+    box.hidden = true;
+    $("welcome").hidden = true;
+    $("loading").hidden = false;
+    $("loadmsg").textContent = "جاري تشغيل المدرب…";
+    state = "loading";
+    await init();
+  }, {
+    title: "Booth 01 — Check-in",
+    subtitle: "Operator: enter the visitor's University ID and name, then press Start.",
+    welcomePrefix: "Welcome"
+  });
+}
+async function sendScore(scoreOutOf100, details) {
+  if (scoreSentForAttempt || !currentPlayer || !attemptId) return;
+  scoreSentForAttempt = true;
+  const points = Math.max(0, Math.min(20, Math.round(scoreOutOf100 / 100 * 20)));
+  const submittedAttempt = attemptId;
+  setStatus("جاري إرسال النقاط إلى لوحة الفعالية المشتركة…");
+  try {
+    const result = await window.saveScore(currentPlayer.studentId, "booth01", points, {
+      attemptId: submittedAttempt,
+      rawScore: scoreOutOf100,
+      exercise: details.exercise,
+      correctReps: details.correctReps,
+      topTip: details.topTip
+    });
+    // Do not replace the status for the next visitor if the previous request completed late.
+    if (attemptId !== submittedAttempt) return;
+    if (result.queued) setStatus("الاتصال غير متاح؛ حُفظت النتيجة في قائمة الانتظار وستُرسل تلقائيًا.");
+    else if (result.counted === false) setStatus("هذه محاولة إضافية؛ لم تُحتسب في النقاط الإجمالية.");
+    else setStatus(`تم تسجيل ${points} من 20 نقطة في النظام المشترك.`);
+  } catch (error) {
+    if (attemptId === submittedAttempt) setStatus("تعذّر إرسال الدرجة: " + error.message);
+    console.error("Shared score submission failed:", error);
+  }
+}
 let ex = null;           // current exercise key
 let reps = [];           // scored reps: {total, tip}
 let armed = false;       // true once the person has been in the start position
@@ -435,7 +518,7 @@ const ARMS  = [[11,13],[13,15],[12,14],[14,16]];
 let lastT = -1;
 function loop() {
   requestAnimationFrame(loop);
-  if (cam.readyState < 2 || cam.currentTime === lastT) return;   // wait for a new frame
+  if (!landmarker || !cam.srcObject || cam.readyState < 2 || cam.currentTime === lastT) return;   // wait for a new frame
   lastT = cam.currentTime;
   const res = landmarker.detectForVideo(cam, performance.now());
   ctx.clearRect(0, 0, ov.width, ov.height);
@@ -608,24 +691,9 @@ function updateCount() { $("count").textContent = "الحركة " + Math.min(rep
 /* =====================================================================
    8) Session flow: menu -> 3-2-1 -> reps -> result -> menu
    ===================================================================== */
-function goToMenuAfterName() {
-  const input = $("playerName");
-  const value = input.value.trim();
-
-  if (!value) {
-    input.focus();
-    input.placeholder = "اكتب اسمك أولًا";
-    return;
-  }
-
-  if (state !== "welcome") return;
-  state = "menu";
-  visitorName = value.slice(0, 20);
-  $("welcome").hidden = true;
-  $("menu").hidden = false;
-}
    async function startSession(key) {
   if (state !== "menu") return;
+  if (!currentPlayer) return;
   const id = ++sessionId;
   ex = key; reps = []; rep = null; armed = false; lastTapSide = null;
   Object.keys(buffers).forEach(k => delete buffers[k]);
@@ -657,8 +725,9 @@ function showResult() {
   $("correct").textContent = "الحركات الصحيحة: " + correct + " / " + CONFIG.reps;
   $("fixtip").textContent = top ? top[0] : "ولا شي — أداؤك ممتاز!";
   $("leaderboardScreen").hidden = false;
-  saveLeaderboardScore(total);
+  saveLeaderboardScore(total); // Local, booth-only leaderboard; not the shared score database.
   showLeaderboard();
+  void sendScore(total, {exercise: ex, correctReps: correct, topTip: top ? top[0] : CONFIG.tips.good});
   $("leaderboardScreen").scrollTop = 0;
   $("leaderboardTitle").focus();
 }
@@ -692,7 +761,7 @@ function showLeaderboard() {
   const board = $("leaderboard");
   board.replaceChildren();
   const title = document.createElement("h2");
-  title.textContent = "أفضل 5 متصدرين";
+  title.textContent = "أفضل 5 نتائج محلية (هذا الجهاز)";
   board.appendChild(title);
   let saved = [];
   try { saved = readLeaderboard(); } catch (error) { console.error(error); }
@@ -725,19 +794,7 @@ function showLeaderboard() {
   board.appendChild(list);
 }
 
-function toMenu() {
-  sessionId++;
-  state = "welcome";
-  ex = null;
-  visitorName = "";
-  $("hud").hidden = true;
-  $("leaderboardScreen").hidden = true;
-  $("warn").hidden = true;
-  $("menu").hidden = true;
-  $("welcome").hidden = false;
-  $("playerName").value = "";
-  if (window.speechSynthesis) speechSynthesis.cancel();
-}
+function toMenu() { beginCheckIn(); }
 
 function renderBoardAdmin() {
   const list = $("adminList");
@@ -826,12 +883,7 @@ window.addEventListener("storage", event => {
 document.querySelectorAll("[data-ex]").forEach(b => b.onclick = () => startSession(b.dataset.ex));
 $("again").onclick = toMenu;
 $("cancel").onclick = toMenu;
-$("startChallenge").onclick = goToMenuAfterName;
-
-$("playerName").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") goToMenuAfterName();
-});
-init();
+beginCheckIn();
 </script>
 </body>
 </html>
